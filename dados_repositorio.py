@@ -1,65 +1,58 @@
 import requests
-import pandas as pd
+import base64
 from dotenv import load_dotenv
 import os
 
-class DadosRepositorios:
+class ManipulaRepositorios:
+    """Classe para manipular repositórios no GitHub."""
+
     def __init__(self, usuario):
+        """
+        Inicializa a classe ManipulaRepositorios.
+
+        Args:
+            usuario (str): O nome do usuário do GitHub.
+        """
         self.usuario = usuario
         self.url_base = 'https://api.github.com'
         load_dotenv()
         self.token = os.getenv('TOKEN_GITHUB')
         self.headers = {'Authorization': f'Bearer {self.token}', 'X-GitHub-Api-Version': '2022-11-28'}
-    
-    def _lista_repositorio(self):
-        lista_de_repositorios = []
-        pagina = 1
-        while True:
-            url = f'{self.url_base}/users/{self.usuario}/repos?page={pagina}'
-            requisicao = requests.get(url, headers=self.headers)
-            repositorios = requisicao.json()
 
-            if len(repositorios) == 0:
-                break
+    def criar_repositorio(self, nome, descricao):
+        """
+        Cria um novo repositório no GitHub.
 
-            lista_de_repositorios.append(repositorios)
-            pagina = pagina + 1
+        Args:
+            nome (str): O nome do novo repositório.
+            descricao (str): A descrição do novo repositório.
+        """
+        dados = {
+            "name": nome,
+            "description": descricao,
+            "private": True
+        }
+        resposta = requests.post(f'{self.url_base}/user/repos', json=dados, headers=self.headers)
+        print(f'Status da criação do repositório: {resposta.status_code}')
 
-        return lista_de_repositorios
-    
-    def _nomes_repositorios(self, lista_de_repositorios: list):
-        nomes = []
-        for pagina in lista_de_repositorios:
-            for repositorio in pagina:
-                try:
-                    nomes.append(repositorio['name'])
-                except:
-                    pass
-        return nomes
-    
-    def _linguagens_repositorios(self, lista_de_repositorios: list):
-        linguagens = []
-        for pagina in lista_de_repositorios:
-            for repositorio in pagina:
-                try:
-                    linguagens.append(repositorio['language'])
-                except:
-                    pass
-        return linguagens
-    
-    def criar_df(self):
-        repositorios = self._lista_repositorio()
-        nomes = self._nomes_repositorios(repositorios)
-        linguagens = self._linguagens_repositorios(repositorios)
+    def add_arquivo(self, nome_repositorio, nome_arquivo, caminho_arquivo):
+        """
+        Adiciona um novo arquivo a um repositório existente no GitHub.
 
-        dados = pd.DataFrame()
-        dados['Nome Repositorio'] = nomes
-        dados['Linguagem de Programacao'] = linguagens 
+        Args:
+            nome_repositorio (str): O nome do repositório ao qual o arquivo será adicionado.
+            nome_arquivo (str): O nome do arquivo a ser adicionado.
+            caminho_arquivo (str): O caminho local do arquivo a ser adicionado.
+        """
+        with open(caminho_arquivo, 'rb') as arquivo:
+            conteudo = arquivo.read()
+        conteudo_codificado = base64.b64encode(conteudo)
 
-        return dados
-    
-    def gerar_csv(self):
-        dados = self.criar_df()
-        dados.to_csv(f'Dados\Dados {self.usuario.capitalize()}.csv', sep=',', index=False)
-        
+        url = f'{self.url_base}/repos/{self.usuario}/{nome_repositorio}/contents/{nome_arquivo}'
+        dados = {
+            'message': 'Adicionando um novo arquivo',
+            'content': conteudo_codificado.decode('utf-8')
+        }
 
+        requisicao = requests.put(url, headers=self.headers, json=dados)
+        print(requisicao.status_code)
