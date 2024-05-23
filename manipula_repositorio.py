@@ -18,6 +18,7 @@ class ManipulaRepositorios:
         load_dotenv()
         self.token = os.getenv('TOKEN_GITHUB')
         self.headers = {'Authorization': f'Bearer {self.token}', 'X-GitHub-Api-Version': '2022-11-28'}
+        
 
     def criar_repositorio(self, nome, descricao):
         """
@@ -35,7 +36,8 @@ class ManipulaRepositorios:
         resposta = requests.post(f'{self.url_base}/user/repos', json=dados, headers=self.headers)
         print(f'Status da criação do repositório: {resposta.status_code}')
 
-    def add_arquivo(self, nome_repositorio, nome_arquivo, caminho_arquivo):
+
+    def adicionar_arquivo(self, nome_repositorio, nome_arquivo, caminho_arquivo):
         """
         Adiciona um novo arquivo a um repositório existente no GitHub.
 
